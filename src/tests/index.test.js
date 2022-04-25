@@ -1,81 +1,53 @@
-import { sortProperties, showSpecialAttacks } from '../index';
+import { showHealthStatus, sortHealthStatus, getLevel } from '../js/index';
+import fetchData from '../js/http';
 
-let testArr;
+jest.mock('../js/http');
 
 beforeEach(() => {
-  testArr = {
-    name: 'Лучник',
-    type: 'Bowman',
-    health: 50,
-    level: 3,
-    attack: 40,
-    defence: 10,
-    special: [
-      {
-        id: 8,
-        name: 'Двойной выстрел',
-        icon: 'http://...',
-        description: 'Двойной выстрел наносит двойной урон',
-      },
-      {
-        id: 9,
-        name: 'Нокаутирующий удар',
-        icon: 'http://...',
-      },
-    ],
-  };
+  jest.resetAllMocks();
 });
 
-test('sortProperties should return correctly sorted array', () => {
-  testArr.special = 'test';
+describe('Game functions: ', () => {
+  test('showHealthStatus should return correct status', () => {
+    expect(showHealthStatus({ name: 'гладиатор', health: 25 })).toEqual(
+      'wounded',
+    );
+    expect(showHealthStatus({ name: 'гладиатор', health: 5 })).toEqual(
+      'critical',
+    );
+    expect(showHealthStatus({ name: 'гладиатор', health: 70 })).toEqual(
+      'healthy',
+    );
+  });
 
-  let sortArr = [
-    { key: 'level', value: '3' },
-    { key: 'defence', value: '10' },
-    { key: 'name', value: 'Лучник' },
-    { key: 'attack', value: '40' },
-    { key: 'health', value: '50' },
-    { key: 'special', value: 'test' },
-    { key: 'type', value: 'Bowman' },
-  ];
-
-  expect(sortProperties(testArr, ['level', 'defence', 'name'])).toEqual(
-    sortArr,
-  );
-
-  sortArr = [
-    { key: 'attack', value: '40' },
-    { key: 'defence', value: '10' },
-    { key: 'health', value: '50' },
-    { key: 'level', value: '3' },
-    { key: 'name', value: 'Лучник' },
-    { key: 'special', value: 'test' },
-    { key: 'type', value: 'Bowman' },
-  ];
-
-  expect(sortProperties(testArr)).toEqual(sortArr);
-
-  expect(sortProperties(testArr, ['agility', 'endurance'])).toEqual(sortArr);
+  test('sortHealthStatus should return correct order of characters', () => {
+    expect(
+      sortHealthStatus([
+        { name: 'бард', health: 15 },
+        { name: 'чародей', health: 85 },
+        { name: 'целитель', health: 20 },
+        { name: 'ассассин', health: 45 },
+        { name: 'страж', health: 90 },
+      ]),
+    ).toEqual([
+      { name: 'страж', health: 90 },
+      { name: 'чародей', health: 85 },
+      { name: 'ассассин', health: 45 },
+      { name: 'целитель', health: 20 },
+      { name: 'бард', health: 15 },
+    ]);
+  });
 });
 
-test('showSpecialAttacks should return correct array', () => {
-  const returnedArr = [
-    {
-      id: 8,
-      name: 'Двойной выстрел',
-      icon: 'http://...',
-      description: 'Двойной выстрел наносит двойной урон',
-    },
-    {
-      id: 9,
-      name: 'Нокаутирующий удар',
-      icon: 'http://...',
-      description: 'Описание недоступно',
-    },
-  ];
+describe('Functions for mocking: ', () => {
+  test('fetchData should be called with correct url', () => {
+    fetchData.mockReturnValue(JSON.stringify({}));
+    getLevel(1);
+    expect(fetchData).toBeCalledWith('https://server/user/1');
+  });
 
-  expect(showSpecialAttacks(testArr)).toEqual(returnedArr);
-
-  delete testArr.special;
-  expect(showSpecialAttacks(testArr)).toEqual(false);
+  test('getLevel should return correct response', () => {
+    fetchData.mockReturnValue({ status: 'ok', level: 100 });
+    expect(getLevel(1)).toEqual('Ваш текущий уровень: 100');
+  });
 });
